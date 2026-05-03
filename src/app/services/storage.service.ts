@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import * as CryptoJS from 'crypto-js';
+import { environment } from '../../environments/environment';
 
-const ENC_KEY = 'GreenLedger2025';
+const ENC_KEY = environment.encryptionKey || 'GreenLedger2025';
 
 @Injectable({
   providedIn: 'root'
