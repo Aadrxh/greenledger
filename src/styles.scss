@@ -1,0 +1,32 @@
+// Custom Material Theme or Global Styles
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; background-color: #f5f5f5; }
+
+// Utility classes
+.full-width { width: 100%; }
+.spacer { flex: 1 1 auto; }
+
+// Toastify styles (manual override if needed)
+.toastify-container {
+  z-index: 9999 !important;
+}
+
+// Global transitions
+* {
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+// Custom scrollbar
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

@@ -1,0 +1,9 @@
+.angular
+.vscode
+dist
+node_modules
+functions
+playwright-report
+test-results
+tests
+*.spec.ts
