@@ -25,4 +25,7 @@ if (!fs.existsSync(dir)) {
 }
 
 fs.writeFileSync(targetPath, envFile);
+console.log('-----------------------------------------');
 console.log(`Environment file generated at ${targetPath}`);
+console.log('Using API Key: ' + (process.env.FIREBASE_API_KEY ? 'FOUND' : 'NOT FOUND'));
+console.log('-----------------------------------------');
