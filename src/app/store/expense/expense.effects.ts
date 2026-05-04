@@ -3,8 +3,8 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { ExpenseService } from '../../services/expense.service';
 import * as ExpenseActions from './expense.actions';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
-import { of } from 'rxjs';
-import { ToastService } from '../../services/toast.service'; // Will create this later
+import { of, from } from 'rxjs';
+import { ToastService } from '../../services/toast.service';
 
 @Injectable()
 export class ExpenseEffects {
@@ -22,8 +22,16 @@ export class ExpenseEffects {
     switchMap(() => this.expenseService.getExpenses().pipe(
       map(expenses => ExpenseActions.loadExpensesSuccess({ expenses })),
       catchError(error => {
-        // If something goes wrong, we show a friendly toast to the user
-        this.toastService.error('Oops! We couldn\'t load your expenses.');
+        console.error('Error loading expenses:', error);
+        
+        let message = 'Oops! We couldn\'t load your expenses.';
+        if (error.code === 'unavailable' || error.message?.includes('net::ERR_NAME_NOT_RESOLVED')) {
+          message = 'Network error: Cannot reach Firebase. Please check your internet connection or DNS settings.';
+        } else if (error.message?.includes('different Firestore SDK')) {
+          message = 'System configuration error: Firebase SDK mismatch detected.';
+        }
+
+        this.toastService.error(message);
         return of(ExpenseActions.loadExpensesFailure({ error: error.message }));
       })
     ))
@@ -75,6 +83,3 @@ export class ExpenseEffects {
     ))
   ));
 }
-
-// Helper for 'from' which was missing
-import { from } from 'rxjs';

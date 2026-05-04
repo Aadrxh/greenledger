@@ -63,7 +63,7 @@ export class DashboardComponent {
   categories = Object.values(ExpenseCategory);
 
   constructor() {
-    this.store.dispatch(loadExpenses());
+    // We moved dispatch to AuthService for better refresh handling
   }
 
   getCategoryTotal(category: ExpenseCategory) {

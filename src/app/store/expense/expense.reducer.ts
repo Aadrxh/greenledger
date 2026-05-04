@@ -24,7 +24,7 @@ export const initialState: ExpenseState = {
 
 export const expenseReducer = createReducer(
   initialState,
-  on(ExpenseActions.loadExpenses, (state) => ({ ...state, loading: true })),
+  on(ExpenseActions.loadExpenses, (state) => ({ ...state, loading: true, error: null })),
   on(ExpenseActions.loadExpensesSuccess, (state, { expenses }) => ({ ...state, expenses, loading: false, error: null })),
   on(ExpenseActions.loadExpensesFailure, (state, { error }) => ({ ...state, loading: false, error })),
   

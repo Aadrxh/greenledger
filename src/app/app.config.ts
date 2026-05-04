@@ -29,8 +29,14 @@ export const appConfig: ApplicationConfig = {
     
     // Firebase
     provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideFirestore(() => getFirestore()),
-    provideAuth(() => getAuth()),
+    provideFirestore(() => {
+      const app = initializeApp(environment.firebase);
+      return getFirestore(app);
+    }),
+    provideAuth(() => {
+      const app = initializeApp(environment.firebase);
+      return getAuth(app);
+    }),
 
     // NgRx
     provideStore({ expenses: expenseReducer }), 

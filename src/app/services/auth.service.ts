@@ -1,10 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { Auth, authState, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User as FirebaseUser } from '@angular/fire/auth';
+import { Auth, authState, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, User as FirebaseUser, onAuthStateChanged } from '@angular/fire/auth';
 import { Firestore, doc, getDoc, setDoc } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { Observable, from, of } from 'rxjs';
 import { map, switchMap, tap } from 'rxjs/operators';
 import { User, UserRole } from '../models/user.model';
+import { Store } from '@ngrx/store';
+import { loadExpenses } from '../store/expense/expense.actions';
 
 import { StorageService } from './storage.service';
 
@@ -16,8 +18,15 @@ export class AuthService {
   private firestore = inject(Firestore);
   private router = inject(Router);
   private storage = inject(StorageService);
+  private store = inject(Store);
 
   user$ = authState(this.auth).pipe(
+    tap(fbUser => {
+      if (fbUser) {
+        console.log('User authenticated, dispatching loadExpenses... 🟢');
+        this.store.dispatch(loadExpenses());
+      }
+    }),
     switchMap(fbUser => {
       if (!fbUser) return of(null);
       return from(this.getUserProfile(fbUser.uid));
@@ -67,19 +76,29 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
-  isLoggedIn(): boolean {
-    const flag = this.storage.getDecrypted('login_flag');
-    if (!flag) return false;
-    
-    const loginTime = parseInt(flag, 10);
-    const now = Date.now();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-    
-    if (now - loginTime > twentyFourHours) {
-      this.logout();
-      return false;
-    }
-    
-    return !!this.auth.currentUser;
+  isLoggedIn(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const flag = this.storage.getDecrypted('login_flag');
+      if (!flag) {
+        resolve(false);
+        return;
+      }
+
+      const loginTime = parseInt(flag, 10);
+      const now = Date.now();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+
+      if (now - loginTime > twentyFourHours) {
+        this.logout();
+        resolve(false);
+        return;
+      }
+
+      // Check if Firebase already has a user or wait for it to initialize
+      const unsubscribe = onAuthStateChanged(this.auth, (user) => {
+        unsubscribe();
+        resolve(!!user);
+      });
+    });
   }
 }

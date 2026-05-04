@@ -146,8 +146,7 @@ export class ExpenseTrackerComponent implements OnInit {
   isAdmin = false;
 
   ngOnInit() {
-    // Kick off the loading process as soon as the component wakes up
-    this.store.dispatch(loadExpenses());
+    // We moved dispatch to AuthService for better refresh handling
     
     this.searchSubject.pipe(
       debounceTime(300),

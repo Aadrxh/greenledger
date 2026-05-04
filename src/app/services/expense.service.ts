@@ -10,13 +10,15 @@ import {
   doc, 
   deleteDoc, 
   orderBy,
-  onSnapshot
+  onSnapshot,
+  Timestamp,
+  serverTimestamp
 } from '@angular/fire/firestore';
 import { Expense } from '../models/expense.model';
-import { Observable, from, of } from 'rxjs';
-import { map, switchMap, tap } from 'rxjs/operators';
+import { Observable, from, of, throwError } from 'rxjs';
+import { map, switchMap, tap, take, catchError } from 'rxjs/operators';
 import { CacheService } from './cache.service';
-import { Auth } from '@angular/fire/auth';
+import { Auth, authState } from '@angular/fire/auth';
 
 @Injectable({
   providedIn: 'root'
@@ -36,24 +38,42 @@ export class ExpenseService {
    * If the cache is cold, we hit Firestore and then warm up the cache.
    */
   getExpenses(): Observable<Expense[]> {
-    return from(this.cache.getExpenses()).pipe(
-      switchMap(cached => {
-        if (cached) {
-          console.log('Serving expenses from local cache... zoom zoom! 🚀');
-          return of(cached);
+    return authState(this.auth).pipe(
+      take(1),
+      switchMap(user => {
+        if (!user) {
+          console.warn('No user found in getExpenses. Returning empty list.');
+          return of([]);
         }
-        
-        console.log('Cache miss. Fetching fresh data from Firestore... 📡');
+
+        console.log(`Fetching expenses for user: ${user.uid} 👤`);
+
+        // We'll use a more direct way to fetch data to bypass potential wrapper issues
         const q = query(
-          this.expensesRef, 
+          collection(this.firestore, 'expenses'),
+          where('createdBy', '==', user.uid),
           where('isDeleted', '==', false),
           orderBy('date', 'desc')
         );
-        
-        return collectionData(q, { idField: 'id' }).pipe(
-          map(data => data as Expense[]),
-          tap(expenses => this.cache.setExpenses(expenses))
-        );
+
+        return new Observable<Expense[]>(subscriber => {
+          const unsubscribe = onSnapshot(q, 
+            (snapshot) => {
+              const expenses = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              } as Expense));
+              console.log(`Successfully fetched ${expenses.length} expenses.`);
+              this.cache.setExpenses(expenses);
+              subscriber.next(expenses);
+            },
+            (error) => {
+              console.error('Firestore onSnapshot error:', error);
+              subscriber.error(error);
+            }
+          );
+          return () => unsubscribe();
+        });
       })
     );
   }
@@ -63,6 +83,7 @@ export class ExpenseService {
     const q = query(
       this.expensesRef, 
       where('isDeleted', '==', false),
+      where('createdBy', '==', this.auth.currentUser?.uid),
       orderBy('date', 'desc')
     );
     
